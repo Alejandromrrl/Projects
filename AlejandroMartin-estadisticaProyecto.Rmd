@@ -1,0 +1,133 @@
+---
+title: "Estadistica proyecto - Alejandro Martín Ruiz"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Tenemos un archivo en Excel el cual importaremos (leeremos con función read.excel) como dataframe.
+
+```{r}
+library(readxl)
+library(ggfortify)
+library(ggplot2)
+```
+
+```{r lectura y visualizacion datos bruto}
+# Leemos los datos desde formato binario comprimido RDS 
+datos <- read_excel('/Users/alejandromartinruiz/Desktop/Master Data/Master temario/9-ESTADÍSTICA - Conrado Manuel García/Documentación estadística-20220307/Tarea/Libro1.xlsx')
+
+Totalcraneos <- data.frame(datos)
+
+```
+
+Tenemos el dataframe general, ahora vamos a separar el dataframe dependiendo de si el craneo es 1 o 2.
+
+```{r}
+craneos1 <- Totalcraneos[1:30,]
+craneos2 <- Totalcraneos[31:60,]
+```
+
+Una vez separado el dataframe principal en 1 y 2 procedemos a continuar con el primer apartado.
+
+#1.a) obtener con R las diferentes medidas de centralización y dispersión, asimetría y curtosis estudiadas. Así mismo, obtener el diagrama de caja y bigotes. Se debe hacer por separado para la sub-muestra de los cráneos del predinástico temprano y para la sub-muestra de los del predinástico tardío. Comentar los resultados obtenidos. Estos comentarios son obligatorios.
+
+```{r}
+#estadísticos
+uno <- psych::describe(Filter(is.numeric, craneos1)) 
+dos <- psych::describe(Filter(is.numeric, craneos2))
+```
+
+Ahora lo vemos graficamente en boxplot e histogramas.
+
+```{r histogramas y boxplots, warning=FALSE, message=F}
+
+bx1<-boxplot(craneos1[,2])
+bx2<-boxplot(craneos2[,2])
+
+h1<-hist(craneos1[,2])
+h2<-hist(craneos2[,2])
+
+```
+
+Primero entramos a analizar los boxplot. En referencia a la primera edad podemos ver el mínimo en 130 y un máximo en 133. Se aprecia que en 131,5 se concetra la mediana de las medidas tomadas. En la segunda edad con un mínimo de 131 y un máximo de 134 la mayor concentración se recoge en el tope de la caja subiendo a 133.
+Respecto a los histogramas observamos una evolución clara de los picos, pasan de menos de 132 en la primera edad a más de 132 en la sgunda edad.
+
+En nuestra tabla de estadísticos descriptivos podemos apreciar una asimetría (skew) positiva en ambas épocas, en ambos casos la concentración de datos es mayor a la derecha de la media. Sin embargo, en la curtosis (kurtosis) podemos ver que en la primera edad será leptocúrtica, es decir habrá una mayor concentración de las medidas de craneos entorno a un eje simétrico. En la segunda edad la curtosis será negativa (platicurtica) mostrando una menor concentración y mayor dispersión de medidas.
+
+En definitiva se ve una clara evolución positiva de la medida del craneo en la segunda edad. 
+
+#1.b) Determinar si cada una de las dos sub-muestras sigue una  distribución normal utilizando el test de Kolmogorov-Smirnov
+
+Respecto al test de Kolmogorov apreciamos que no hay un número grande de muestra para que sea efectivo, además de no conocer media  y varianza. Por ello, nos decantaremos por hacer el test de Shapiro-Wilks ya que nuestra muestra es mayor de 50 conjuntamente, pero como estamos analizando de forma separada por épocas será menor a 50 (30 muestras por época).
+
+```{r}
+library(nortest)
+shapiro.test(craneos1$Anchura.del.cráneo)
+shapiro.test(craneos2$Anchura.del.cráneo)
+```
+
+En ambas pruebas podemos ver que el p-valor es menor a 0,05.
+- Shapiro Craneos 1 -> p-valor 0,0003481 < 0,05
+- Shapiro Craneos 2 -> p-valor 0,003341 < 0,05
+
+Gracias a estos resultados podemos dar por hecho que las distribuciones no siguen una normal.
+
+#2.a) Con los mismos datos del ejercicio anterior, obtener un intervalo de confianza (de nivel 0.9, de nivel 0.95 y de nivel 0.99) para la diferencia entre las medias de la anchura de la cabeza en ambos periodos históricos. Interpretar los resultados obtenidos y discutirlos en función del test de normalidad del ejercicio anterior. La interpretación debe ser rigurosa desde el punto de vista estadístico y también marcada por el story telling, es decir, comprensible desde el punto de vista de las variables respondiendo a la pregunta ¿en qué época la cabeza era más ancha?
+
+```{r}
+library(carData)
+library(car)
+library(BSDA)
+```
+
+```{r}
+leveneTest(craneos1$Anchura.del.cráneo, craneos2$Anchura.del.cráneo, center=mean)
+```
+
+```{r}
+z.test(x = craneos1$Anchura.del.cráneo,  y = craneos2$Anchura.del.cráneo, 
+            alt = "two.sided",
+            mu = 0,
+            sigma.x = sd(craneos1$Anchura.del.cráneo),
+            sigma.y = sd(craneos2$Anchura.del.cráneo),
+            conf.level = 0.9)
+z.test(x = craneos1$Anchura.del.cráneo,  y = craneos2$Anchura.del.cráneo, 
+            alt = "two.sided",
+            mu = 0,
+            sigma.x = sd(craneos1$Anchura.del.cráneo),
+            sigma.y = sd(craneos2$Anchura.del.cráneo),
+            conf.level = 0.95)
+z.test(x = craneos1$Anchura.del.cráneo,  y = craneos2$Anchura.del.cráneo, 
+            alt = "two.sided",
+            mu = 0,
+            sigma.x = sd(craneos1$Anchura.del.cráneo),
+            sigma.y = sd(craneos2$Anchura.del.cráneo),
+            conf.level = 0.99)
+```
+
+El valor de p con esta prueba a dos colas es p<0.05, por lo que la hipótesis alterna debe ser aceptada bajo cualquier nivel de significancia estadística razonable.
+
+Respecto a la pregunta en que época era mayor la anchura del craneo se aprecia que era en la segunda edad. Donde la media es mayor por casi 1cm más.
+
+#2.b) Utilizar el test t para contrastar la hipótesis de que ambas medias son iguales. Explicar qué condiciones se deben cumplir para poder aplicar ese contraste. Determinar si se cumplen. Admitiremos de forma natural la independencia entre ambas muestras, así que esa condición no hace falta comprobarla.
+
+Para realizar la t de student se necesita lo siguiente:
+
+-Los datos son continuos.
+-La muestra de datos se ha tomado aleatoriamente de la población.
+-Hay homogeneidad en la varianza (por ejemplo, la variabilidad de datos de cada grupo es similar).
+-La distribución es aproximadamente normal.
+
+Aun que la distribución a priori no parece una normal, se tomará como ella para realizar el test t de student. Es decir, gracias a Shapiro pudimos ver que no seguía una normal.
+
+```{r}
+t.test(craneos1$Anchura.del.cráneo, craneos2$Anchura.del.cráneo)
+```
+
+El p valor es 0,0002329 (menor que 0,05), por lo tanto se rechaza que la media de ambas muestras no es la misma con este test t de student.
+
